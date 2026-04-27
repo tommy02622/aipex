@@ -2,6 +2,10 @@
 
 AIPEX는 F1 게임 텔레메트리와 FastF1 레퍼런스 랩을 결합해 주행을 분석하고, 경기 종료 후 코칭 리포트를 제공하는 프로젝트입니다.
 
+## 데모 링크
+
+- GitHub Pages: [https://tommy02622.github.io/aipex/](https://tommy02622.github.io/aipex/)
+
 ## 저장소 구성
 
 ```text
