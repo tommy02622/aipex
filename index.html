@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIPEX 경기 종료 리포트 목업</title>
+  <style>
+    :root {
+      --bg: #081018;
+      --panel: rgba(9, 17, 28, 0.78);
+      --panel-strong: rgba(11, 21, 34, 0.94);
+      --line: rgba(141, 177, 222, 0.18);
+      --text: #e9f1ff;
+      --muted: #90a0be;
+      --teal: #53e0c1;
+      --orange: #ff8a5b;
+      --yellow: #ffd166;
+      --blue: #7aa8ff;
+      --red: #ff6b6b;
+      --green: #60e19f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'SUIT', 'Pretendard', 'Noto Sans KR', 'Segoe UI', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 18%, rgba(83, 224, 193, 0.16), transparent 28%),
+        radial-gradient(circle at 86% 14%, rgba(255, 138, 91, 0.16), transparent 24%),
+        radial-gradient(circle at 80% 82%, rgba(122, 168, 255, 0.16), transparent 28%),
+        linear-gradient(135deg, #05080d, #07121b 48%, #09131d 100%);
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at center, black, transparent 82%);
+      pointer-events: none;
+    }
+    .page {
+      width: min(1400px, calc(100% - 40px));
+      margin: 24px auto 56px;
+      position: relative;
+      z-index: 1;
+    }
+    .badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .eyebrow, .mock-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c8d9fb;
+    }
+    .mock-flag { color: #ffe6d6; }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+    }
+    .hero-title {
+      font-size: clamp(34px, 5vw, 60px);
+      line-height: 0.98;
+      margin: 8px 0 14px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      max-width: 10ch;
+    }
+    .hero-sub {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 64ch;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .chip {
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+      color: #dce7ff;
+      font-size: 13px;
+    }
+    .score-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 18px;
+      align-items: center;
+      height: 100%;
+    }
+    .score-ring {
+      width: 154px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: conic-gradient(var(--teal) 0 60%, rgba(255,255,255,0.08) 60% 100%);
+      display: grid;
+      place-items: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .score-ring::after {
+      content: '';
+      position: absolute;
+      inset: 13px;
+      border-radius: 50%;
+      background: #07111b;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .score-ring-inner {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    .score-ring-inner strong {
+      display: block;
+      font-size: 44px;
+      line-height: 1;
+      letter-spacing: -0.05em;
+    }
+    .score-ring-inner span {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .grade-pill {
+      display: inline-flex;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(83, 224, 193, 0.14);
+      color: var(--teal);
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .metric-card {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+    }
+    .metric-card h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .metric-card strong {
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+    .section {
+      margin-top: 16px;
+    }
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+    .section-title h2 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+    .section-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .dual-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+    }
+    .summary-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .summary-item {
+      border-left: 3px solid var(--teal);
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 0 18px 18px 0;
+      color: #dfe8fb;
+      line-height: 1.65;
+      font-size: 15px;
+    }
+    .priority-box {
+      display: grid;
+      gap: 12px;
+    }
+    .priority-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px;
+    }
+    .priority-card header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .priority-card h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .loss-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 107, 107, 0.12);
+      color: #ffb4b4;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .evidence-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .evidence-chip {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      color: #d7e6ff;
+      font-size: 12px;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    .table th, .table td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 14px;
+    }
+    .table th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .tag {
+      display: inline-flex;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      font-size: 12px;
+    }
+    .tag.best { background: rgba(96, 225, 159, 0.12); color: #bdf5cf; }
+    .chart-card {
+      display: grid;
+      gap: 14px;
+    }
+    .bars {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 62px 1fr 86px;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+    .bar-track {
+      position: relative;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+    }
+    .bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--orange), var(--yellow));
+    }
+    .line-wrap {
+      background: rgba(255,255,255,0.03);
+      border-radius: 22px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .line-wrap svg {
+      width: 100%;
+      height: 180px;
+      display: block;
+    }
+    .line-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .settings-grid, .records-grid, .req-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    .setting-card, .record-card, .req-card {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      min-height: 120px;
+    }
+    .setting-card h4, .record-card h4, .req-card h4 {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .setting-card strong, .record-card strong, .req-card strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .record-card span, .setting-card span, .req-card span {
+      color: #cdd7ea;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .req-card .status {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(96, 225, 159, 0.12);
+      color: #bdf5cf;
+      font-size: 11px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .history-bars {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      align-items: end;
+      height: 170px;
+      margin-top: 8px;
+    }
+    .history-col {
+      display: grid;
+      justify-items: center;
+      gap: 8px;
+    }
+    .history-bar {
+      width: 100%;
+      border-radius: 18px 18px 8px 8px;
+      background: linear-gradient(180deg, rgba(122,168,255,0.95), rgba(83,224,193,0.7));
+      min-height: 24px;
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      padding-bottom: 8px;
+      color: #081018;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .history-col small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .footer-note {
+      margin-top: 18px;
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.14);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    @media (max-width: 1180px) {
+      .hero, .dual-grid { grid-template-columns: 1fr; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .settings-grid, .records-grid, .req-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .page { width: min(100% - 20px, 1400px); }
+      .panel { padding: 18px; border-radius: 22px; }
+      .metric-grid, .settings-grid, .records-grid, .req-grid { grid-template-columns: 1fr; }
+      .score-card { grid-template-columns: 1fr; }
+      .score-ring { margin-inline: auto; }
+      .bar-row { grid-template-columns: 52px 1fr 72px; }
+      .hero-title { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="badge-row">
+      <div class="eyebrow">AIPEX / 경기 종료 분석</div>
+      <div class="mock-flag">세션 종료 / 분석 완료</div>
+    </div>
+
+    <section class="hero">
+      <article class="panel">
+        <div class="eyebrow">경기 종료 인사이트</div>
+        <h1 class="hero-title">경기 종료 후 분석 리포트</h1>
+        <p class="hero-sub">
+          이번 세션의 랩 기록과 코너별 주행 데이터를 분석해 주행 점수, 약점 구간, 개선 포인트를 정리했습니다.
+          아래 결과를 통해 어느 코너에서 시간을 잃었는지, 무엇을 먼저 고쳐야 하는지, 이전 기록 대비 얼마나 나아졌는지 바로 확인할 수 있습니다.
+        </p>
+        <div class="hero-meta" id="heroMeta"></div>
+      </article>
+
+      <article class="panel score-card">
+        <div class="score-ring">
+          <div class="score-ring-inner">
+            <strong id="scoreValue">78</strong>
+            <span id="scoreGrade">B+</span>
+          </div>
+        </div>
+        <div>
+          <div class="grade-pill">주행 점수 갱신 완료</div>
+          <div class="metric-grid" id="metricGrid"></div>
+          <div class="footer-note" id="scoreFoot"></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <div>
+          <h2>AI 코칭 요약</h2>
+          <p>이번 세션에서 가장 먼저 고쳐야 할 구간과 핵심 피드백을 정리했습니다</p>
+        </div>
+      </div>
+      <div class="dual-grid">
+        <article class="panel">
+           <div class="eyebrow">AI 요약</div>
+          <div class="summary-list" id="summaryList"></div>
+        </article>
+        <article class="panel">
+           <div class="eyebrow">우선 코칭</div>
+          <div class="priority-box" id="priorityBox"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <div>
+          <h2>세션 요약</h2>
+          <p>랩 기록과 코너별 손실 분석을 통해 세션 전체 흐름을 확인할 수 있습니다</p>
+        </div>
+      </div>
+      <div class="dual-grid">
+        <article class="panel">
+           <div class="eyebrow">랩 요약</div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>랩</th>
+                <th>기록</th>
+                <th>S1</th>
+                <th>S2</th>
+                <th>S3</th>
+                <th>차이</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody id="lapTableBody"></tbody>
+          </table>
+        </article>
+        <article class="panel chart-card">
+           <div class="eyebrow">약점 코너 손실</div>
+          <div class="bars" id="cornerBars"></div>
+          <div class="line-wrap">
+            <svg id="timelineChart" viewBox="0 0 520 180" preserveAspectRatio="none"></svg>
+            <div class="line-labels" id="timelineLabels"></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <div>
+          <h2>기록 및 설정</h2>
+          <p>이번 세션에 사용된 분석 조건과 최근 기록 변화를 함께 보여줍니다</p>
+        </div>
+      </div>
+      <article class="panel">
+         <div class="eyebrow">저장된 세션 프로필</div>
+        <div class="settings-grid" id="settingsGrid"></div>
+      </article>
+      <div class="dual-grid">
+        <article class="panel">
+          <div class="eyebrow">점수 이력</div>
+          <div class="history-bars" id="historyBars"></div>
+        </article>
+        <article class="panel">
+          <div class="eyebrow">기록 및 근거</div>
+          <div class="records-grid" id="recordsGrid"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <div>
+          <h2>다음 세션 목표</h2>
+          <p>이번 결과를 바탕으로 다음 주행에서 우선적으로 개선할 목표를 제안합니다</p>
+        </div>
+      </div>
+      <article class="panel">
+        <div class="req-grid" id="reqGrid"></div>
+        <div class="footer-note">
+          이번 세션에서는 T10과 T1의 손실이 전체 랩타임에 가장 크게 영향을 줬습니다.
+          다음 주행에서는 브레이크 시작 시점과 스로틀 재가속 타이밍을 우선적으로 맞추는 것이 가장 효과적입니다.
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    const data = {
+      "track": "바레인 인터내셔널 서킷",
+      "trackCode": "BHR",
+      "sessionLabel": "세션 종료 분석",
+      "driver": "AIPEX 팀 드라이버",
+      "lapCount": 5,
+      "validLapCount": 4,
+      "bestLap": "1:39.397",
+      "referenceLap": "1:38.624",
+      "deltaToReference": "+0.773초",
+      "topSpeed": "321 km/h",
+      "avgThrottle": "78%",
+      "avgBrake": "11%",
+      "overallScore": 74,
+      "grade": "B",
+      "scoreDelta": "이전 평균 대비 +4점",
+      "summary": [
+        "유효 랩 4개 중 최고 기록은 1:39.397이었고, 기준 랩 대비 0.773초 차이가 났습니다. 전체적으로 섹터 1은 안정적이었지만 T10 복합 코너에서 감속이 길어지며 손실이 커졌습니다.",
+        "T10에서는 브레이크 시점이 기준 대비 7m 늦었고 에이펙스 최소 속도가 6km/h 낮아 0.18초를 잃었습니다.",
+        "T1은 코너 탈출 후 스로틀 재가속이 12m 늦어 다음 직선 구간까지 손실이 이어졌습니다.",
+        "반대로 T4와 T13은 지난 세션보다 라인 유지가 좋아져 일관성 점수는 상승했습니다."
+      ],
+      "componentScores": [
+        {"label": "페이스", "value": 74, "accent": "#53e0c1"},
+        {"label": "브레이킹", "value": 69, "accent": "#ff8a5b"},
+        {"label": "재가속", "value": 71, "accent": "#ffd166"},
+        {"label": "일관성", "value": 82, "accent": "#7aa8ff"}
+      ],
+      "lapRows": [
+        {"lap": 1, "time": "1:41.284", "s1": "30.941", "s2": "38.826", "s3": "31.517", "delta": "+1.887", "tag": "적응"},
+        {"lap": 2, "time": "1:40.118", "s1": "30.612", "s2": "38.401", "s3": "31.105", "delta": "+0.721", "tag": "유효"},
+        {"lap": 3, "time": "1:39.397", "s1": "30.418", "s2": "38.177", "s3": "30.802", "delta": "+0.000", "tag": "베스트"},
+        {"lap": 4, "time": "1:39.861", "s1": "30.587", "s2": "38.244", "s3": "31.030", "delta": "+0.464", "tag": "유효"},
+        {"lap": 5, "time": "1:40.904", "s1": "30.756", "s2": "38.993", "s3": "31.155", "delta": "+1.507", "tag": "트랙 리밋"}
+      ],
+      "cornerLosses": [
+        {"corner": "T10", "loss": 0.18, "cause": "브레이크 지연 + 최저 속도 저하", "entry": 206, "apex": 95, "brakeLateM": 7, "throttleLateM": 8},
+        {"corner": "T1", "loss": 0.16, "cause": "재가속 시점 지연", "entry": 289, "apex": 124, "brakeLateM": 4, "throttleLateM": 12},
+        {"corner": "T13", "loss": 0.11, "cause": "최저 속도 과도 저하", "entry": 198, "apex": 137, "brakeLateM": 2, "throttleLateM": 6},
+        {"corner": "T4", "loss": 0.07, "cause": "탈출 라인 미세 이탈", "entry": 251, "apex": 176, "brakeLateM": 1, "throttleLateM": 4}
+      ],
+      "timeline": [101.284, 100.118, 99.397, 99.861, 100.904],
+      "scoreHistory": [68, 69, 71, 70, 72, 74],
+      "scoreHistoryLabels": ["S-5", "S-4", "S-3", "S-2", "S-1", "현재"],
+      "settings": [
+        {"label": "UDP 샘플링", "value": "20 Hz"},
+        {"label": "기준 데이터", "value": "F1Laps + FastF1"},
+        {"label": "트랙 프로필", "value": "바레인 LiDAR 우선"},
+        {"label": "분석 대상", "value": "유효 랩 4 / 전체 5"},
+        {"label": "사용자 프로필", "value": "김건후 프로필"}
+      ],
+      "records": [
+        {"label": "개인 최고 기록", "value": "1:39.397", "sub": "이번 세션에서 최고 랩 기록"},
+        {"label": "최고 속도", "value": "321 km/h", "sub": "메인 스트레이트 / DRS 포함"},
+        {"label": "평균 스로틀", "value": "78%", "sub": "T10, T13 감속 구간 영향"},
+        {"label": "평균 브레이크", "value": "11%", "sub": "T1, T10에서 제동 시간 증가"}
+      ],
+      "nextGoals": [
+        {"id": "목표 1", "title": "T10 브레이킹 지점 5m 이상 앞당기기", "status": "우선", "note": "감속 시작이 늦어 최저 속도가 크게 떨어졌습니다. 브레이크 시작만 앞당겨도 손실을 가장 크게 줄일 수 있습니다."},
+        {"id": "목표 2", "title": "T1 탈출 후 스로틀 재개 속도 높이기", "status": "중요", "note": "재가속이 늦어 다음 직선까지 손실이 이어졌습니다. 스티어링이 풀리는 시점과 동시에 스로틀을 여는 연습이 필요합니다."},
+        {"id": "목표 3", "title": "T13 최소 속도 유지", "status": "관찰", "note": "불필요한 추가 감속이 들어가고 있습니다. 조향을 부드럽게 유지하면서 최저 속도 저하를 줄이는 것이 좋습니다."}
+      ]
+    };
+
+    const heroMeta = document.getElementById('heroMeta');
+    [
+      `${data.trackCode} / ${data.track}`,
+      data.sessionLabel,
+      `유효 랩 ${data.validLapCount} / 전체 ${data.lapCount}`,
+      `베스트랩 ${data.bestLap}`,
+      `기준랩 ${data.referenceLap}`,
+      `차이 ${data.deltaToReference}`,
+      `최고 속도 ${data.topSpeed}`
+    ].forEach(text => {
+      const div = document.createElement('div');
+      div.className = 'chip';
+      div.textContent = text;
+      heroMeta.appendChild(div);
+    });
+
+    document.getElementById('scoreValue').textContent = data.overallScore;
+    document.getElementById('scoreGrade').textContent = data.grade;
+    document.getElementById('scoreFoot').textContent = `세션 종료 즉시 주행 점수를 ${data.overallScore}점으로 갱신했고, ${data.scoreDelta}를 기록했습니다. 이번 세션 기준 최고 속도는 ${data.topSpeed}, 평균 스로틀은 ${data.avgThrottle}, 평균 브레이크 사용률은 ${data.avgBrake}였습니다.`;
+
+    const metricGrid = document.getElementById('metricGrid');
+    data.componentScores.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'metric-card';
+      card.innerHTML = `<h4>${item.label}</h4><strong style="color:${item.accent}">${item.value}</strong>`;
+      metricGrid.appendChild(card);
+    });
+
+    const summaryList = document.getElementById('summaryList');
+    data.summary.forEach(text => {
+      const div = document.createElement('div');
+      div.className = 'summary-item';
+      div.textContent = text;
+      summaryList.appendChild(div);
+    });
+
+    const priorityBox = document.getElementById('priorityBox');
+    data.cornerLosses.slice(0, 3).forEach(item => {
+      const card = document.createElement('article');
+      card.className = 'priority-card';
+      card.innerHTML = `
+        <header>
+          <h3>${item.corner}</h3>
+          <div class="loss-pill">+${item.loss.toFixed(2)}초 손실</div>
+        </header>
+        <div>${item.cause}</div>
+        <div class="evidence-row">
+          <div class="evidence-chip">진입 ${item.entry} km/h</div>
+          <div class="evidence-chip">에이펙스 ${item.apex} km/h</div>
+          <div class="evidence-chip">브레이크 +${item.brakeLateM}m 지연</div>
+          <div class="evidence-chip">스로틀 +${item.throttleLateM}m 지연</div>
+        </div>
+      `;
+      priorityBox.appendChild(card);
+    });
+
+    const lapTableBody = document.getElementById('lapTableBody');
+    data.lapRows.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.lap}</td>
+        <td><strong>${row.time}</strong></td>
+        <td>${row.s1}</td>
+        <td>${row.s2}</td>
+        <td>${row.s3}</td>
+        <td>${row.delta}</td>
+        <td><span class="tag ${row.tag === '베스트' ? 'best' : ''}">${row.tag}</span></td>
+      `;
+      lapTableBody.appendChild(tr);
+    });
+
+    const maxLoss = Math.max(...data.cornerLosses.map(d => d.loss));
+    const cornerBars = document.getElementById('cornerBars');
+    data.cornerLosses.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <strong>${item.corner}</strong>
+        <div class="bar-track"><div class="bar-fill" style="width:${(item.loss / maxLoss) * 100}%"></div></div>
+        <span>+${item.loss.toFixed(2)}초</span>
+      `;
+      cornerBars.appendChild(row);
+    });
+
+    const svg = document.getElementById('timelineChart');
+    const values = data.timeline;
+    const min = Math.min(...values) - 0.2;
+    const max = Math.max(...values) + 0.2;
+    const width = 520;
+    const height = 180;
+    const pad = 18;
+    const stepX = (width - pad * 2) / (values.length - 1);
+    const normalizeY = value => height - pad - ((value - min) / (max - min)) * (height - pad * 2);
+    const points = values.map((value, idx) => `${pad + idx * stepX},${normalizeY(value)}`);
+
+    let area = `M ${pad} ${height - pad} `;
+    points.forEach((point, index) => {
+      area += `${index === 0 ? 'L' : 'L'} ${point} `;
+    });
+    area += `L ${pad + (values.length - 1) * stepX} ${height - pad} Z`;
+
+    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyline.setAttribute('fill', 'none');
+    polyline.setAttribute('stroke', '#53e0c1');
+    polyline.setAttribute('stroke-width', '4');
+    polyline.setAttribute('points', points.join(' '));
+
+    const areaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    areaPath.setAttribute('d', area);
+    areaPath.setAttribute('fill', 'rgba(83, 224, 193, 0.15)');
+
+    const grid = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    [0.25, 0.5, 0.75].forEach(r => {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      const y = pad + (height - pad * 2) * r;
+      line.setAttribute('x1', pad);
+      line.setAttribute('x2', width - pad);
+      line.setAttribute('y1', y);
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke', 'rgba(255,255,255,0.12)');
+      line.setAttribute('stroke-dasharray', '5 7');
+      grid.appendChild(line);
+    });
+
+    svg.appendChild(grid);
+    svg.appendChild(areaPath);
+    svg.appendChild(polyline);
+
+    values.forEach((value, idx) => {
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', pad + idx * stepX);
+      circle.setAttribute('cy', normalizeY(value));
+      circle.setAttribute('r', idx === 2 ? '6' : '4');
+      circle.setAttribute('fill', idx === 2 ? '#ffd166' : '#7aa8ff');
+      svg.appendChild(circle);
+    });
+
+    const labels = document.getElementById('timelineLabels');
+    data.lapRows.forEach(row => {
+      const span = document.createElement('span');
+      span.textContent = `랩 ${row.lap}`;
+      labels.appendChild(span);
+    });
+
+    const settingsGrid = document.getElementById('settingsGrid');
+    data.settings.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'setting-card';
+      card.innerHTML = `<h4>${item.label}</h4><strong>${item.value}</strong><span>세션 저장 시 함께 기록된 분석 조건입니다.</span>`;
+      settingsGrid.appendChild(card);
+    });
+
+    const historyBars = document.getElementById('historyBars');
+    const maxScore = 100;
+    data.scoreHistory.forEach((value, idx) => {
+      const col = document.createElement('div');
+      col.className = 'history-col';
+      col.innerHTML = `<div class="history-bar" style="height:${Math.max(24, value / maxScore * 150)}px">${value}</div><small>${data.scoreHistoryLabels[idx]}</small>`;
+      historyBars.appendChild(col);
+    });
+
+    const recordsGrid = document.getElementById('recordsGrid');
+    data.records.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'record-card';
+      card.innerHTML = `<h4>${item.label}</h4><strong>${item.value}</strong><span>${item.sub}</span>`;
+      recordsGrid.appendChild(card);
+    });
+
+    const reqGrid = document.getElementById('reqGrid');
+    data.nextGoals.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'req-card';
+      card.innerHTML = `<div class="status">${item.status}</div><h4>${item.id}</h4><strong>${item.title}</strong><span>${item.note}</span>`;
+      reqGrid.appendChild(card);
+    });
+  </script>
+</body>
+</html>
