@@ -7,11 +7,11 @@ import numpy as np
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parent
-TEMPLATE_PATH = ROOT / "collection_20260426_211750" / "normalized" / "analysis_frames_20260426_211750.csv"
-SOURCE_PATH = ROOT / "fastf1_reference_collection_2024_japan_q_fastest" / "normalized" / "analysis_frames_fastf1_resampled_5m.csv"
-OUTPUT_PATH = ROOT / "fastf1_reference_collection_2024_japan_q_fastest" / "normalized" / "analysis_frames_fastf1_resampled_5m_game_compatible.csv"
-DOC_PATH = ROOT / "fastf1_reference_collection_2024_japan_q_fastest" / "docs" / "game_compatible_notes.md"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TEMPLATE_PATH = REPO_ROOT / "collection_20260426_211750" / "normalized" / "analysis_frames_20260426_211750.csv"
+SOURCE_PATH = REPO_ROOT / "data" / "reference" / "japan" / "japan_reference_expanded_5m.csv"
+OUTPUT_PATH = REPO_ROOT / "data" / "reference" / "japan" / "japan_reference_game_compatible_5m.csv"
+DOC_PATH = REPO_ROOT / "docs" / "fastf1-game-compatible.md"
 
 GRAVITY = 9.80665
 STEER_WHEELBASE_M = 3.6
@@ -36,10 +36,8 @@ def build_template_stats(template: pd.DataFrame) -> dict[str, float]:
         s = pd.to_numeric(template[col], errors="coerce").dropna()
         if s.empty:
             stats[f"{col}_q99_abs"] = 1.0
-            stats[f"{col}_q95_abs"] = 1.0
             continue
         stats[f"{col}_q99_abs"] = float(s.abs().quantile(0.99))
-        stats[f"{col}_q95_abs"] = float(s.abs().quantile(0.95))
     return stats
 
 
@@ -111,50 +109,50 @@ def build_game_compatible_frame(template_columns: list[str]) -> pd.DataFrame:
 
 def write_notes(output: pd.DataFrame) -> None:
     lines = [
-        "# FastF1 Japan 기준랩 게임 원본 호환 버전",
+        "# FastF1 Game-Compatible Reference",
         "",
-        f"- 입력 파일: `{SOURCE_PATH.name}`",
-        f"- 출력 파일: `{OUTPUT_PATH.name}`",
-        f"- 기준 스키마: `{TEMPLATE_PATH.name}`",
-        f"- 총 행 수: `{len(output)}`",
+        f"- source: `{SOURCE_PATH.name}`",
+        f"- output: `{OUTPUT_PATH.name}`",
+        f"- schema template: `{TEMPLATE_PATH.name}`",
+        f"- rows: `{len(output)}`",
         "",
-        "## 컬럼 처리 방식",
+        "## Column Sources",
         "",
-        "### FastF1 실값으로 채운 컬럼",
+        "### Direct from FastF1",
         "- `session_time`, `lap_num`, `lap_distance_m`, `total_distance_m`, `sector`",
         "- `speed_kph`, `throttle`, `brake`, `gear`, `rpm`",
         "- `pos_x`, `pos_z`",
         "",
-        "### 계산 기반 추정 컬럼",
-        "- `steer`: 위치 곡률을 이용한 pseudo-steer",
+        "### Derived from FastF1",
+        "- `steer`: curvature-based pseudo-steer",
         "- `g_lat`: `v^2 * curvature / g`",
         "- `g_long`: `v * dv/ds / g`",
         "",
-        "### 형식 호환용 임의값",
-        "- `session_uid`: FastF1 Japan 기준랩용 고정 해시 ID",
-        "- `frame_id`: 0부터 시작하는 순차 번호",
-        "- `player_car_index`, `lap_player_index`: 단일 기준랩이므로 `0`",
+        "### Placeholder values for schema compatibility",
+        "- `session_uid`: stable hash ID for this reference lap",
+        "- `frame_id`: sequential row index",
+        "- `player_car_index`, `lap_player_index`: `0`",
         "- `lap_packet_seen`: `1`",
         "- `lap_join_status`: `reference`",
         "- `lap_context_age_s`: `0.0`",
-        "- `lap_packet_frame_id`: `frame_id` 복사",
+        "- `lap_packet_frame_id`: copied from `frame_id`",
         f"- `lap_parser_version`: `{LAP_PARSER_VERSION}`",
         "- `lap_parse_valid`: `1`",
         "- `lap_join_defaulted`: `0`",
         "",
-        "## 제거한 컬럼",
+        "## Removed columns",
         "",
-        "- `lap_time_s`: 최신 게임 원본 `analysis_frames`에는 없음",
-        "- `drs`: 최신 게임 원본 `analysis_frames`에는 없음",
+        "- `lap_time_s`: not present in the latest game `analysis_frames` schema",
+        "- `drs`: not present in the latest game `analysis_frames` schema",
         "",
-        "## 추정 방식 메모",
+        "## Derivation Details",
         "",
-        f"- 좌표와 속도는 중앙 이동평균(window={SMOOTHING_WINDOW})으로 한 번 스무딩 후 미분했습니다.",
-        "- heading은 `atan2(dz/ds, dx/ds)`로 계산했습니다.",
-        "- curvature는 `d(heading)/ds`로 계산했습니다.",
-        f"- `steer`는 `atan({STEER_WHEELBASE_M} * curvature)`를 구한 뒤, 실제 게임 데이터의 steer 99퍼센타일 절댓값에 맞춰 스케일링했습니다.",
-        "- `g_lat`, `g_long`은 물리식 기반 추정값이며, FastF1가 직접 제공한 센서값은 아닙니다.",
-        "- `g_lat`, `g_long`은 최신 게임 원본 분포의 99퍼센타일 절댓값을 기준으로 클리핑해 급격한 좌표 노이즈를 줄였습니다.",
+        f"- Position and speed are smoothed with a centered rolling mean (window={SMOOTHING_WINDOW}) before taking gradients.",
+        "- Heading is computed as `atan2(dz/ds, dx/ds)`.",
+        "- Curvature is computed as `d(heading)/ds`.",
+        f"- `steer` is estimated from `atan({STEER_WHEELBASE_M} * curvature)` and scaled to match the 99th percentile absolute steer magnitude from real game data.",
+        "- `g_lat` and `g_long` are calculated estimates, not direct FastF1 sensor channels.",
+        "- `g_lat` and `g_long` are clipped to the 99th percentile absolute range observed in the real game template to reduce coordinate-noise spikes.",
     ]
     DOC_PATH.write_text("\n".join(lines), encoding="utf-8")
 
